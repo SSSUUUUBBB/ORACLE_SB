@@ -175,14 +175,14 @@ REFERENCES 참조테이블(참조 속성);
 -- * SET NULL          : 자식 데이터는 NULL
 -- * SET DEFAULT       : 자식 데이터는 기본값
 -- * RESTRICT          : 자식 테이블의 참조하는 데이터가 존재하면, 부모 데이터 수정 불가
--- * NO ACTION         : 아무런 행위도 취하지 않음(기본값)
+-- * NO ACTION         : 아무런 행위도 취하지 않음(생략)
 
 -- ON DELETE
 -- * CASCADE           : 자식 데이터 삭제
 -- * SET NULL          : 자식 데이터는 NULL
 -- * SET DEFAULT       : 자식 데이터 기본값
 -- * RESTRICT          : 자식 테이블의 참조하는 데이터가 존재하면, 부모 데이터 수정 불가
--- * NO ACTION         : 아무런 행위도 취하지 않음(기본값)
+-- * NO ACTION         : 아무런 행위도 취하지 않음(생략)
 
 --81 서브쿼리
 /*
@@ -234,15 +234,298 @@ FROM employee e, department d,
 WHERE e.dept_code = d.dept_id
   AND e.salary = t.max_sal;
 
+--83
+SELECT dept_code
+FROM employee
+WHERE emp_name = '이태림';
 
+SELECT emp_id 사원번호 
+      ,emp_name 직원명
+      ,email 이메일
+      ,phone 전화번호  
+FROM employee
+WHERE dept_code =
+(SELECT dept_code
+FROM employee
+WHERE emp_name = '이태림')
+;
 
+--84
+--1)서브쿼리 사용
+SELECT dept_id 부서번호
+      ,dept_title 부서명
+      ,location_id 지역ID
+FROM department
+WHERE dept_id IN
+(SELECT DISTINCT dept_code
+FROM employee
+WHERE dept_code IS NOT NULL)
+ORDER BY dept_id ASC;
 
+--사원이 있는 부서 뽑아내기 (서브쿼리)
+SELECT DISTINCT dept_code
+FROM employee
+WHERE dept_code IS NOT NULL;
 
+--2)EXISTS 사용
+SELECT dept_id 부서번호
+      ,dept_title 부서명
+      ,location_id 지역ID
+FROM department d
+WHERE EXISTS
+(SELECT * FROM employee e
+WHERE e.dept_code = d.dept_id)
+ORDER BY dept_id ASC;
 
+--85
+SELECT dept_id 부서번호
+      ,dept_title 부서명
+      ,location_id 지역ID
+FROM department
+WHERE dept_id NOT IN
+(SELECT DISTINCT dept_code
+FROM employee
+WHERE dept_code IS NOT NULL)
+ORDER BY dept_id ASC;
 
+SELECT dept_id 부서번호
+      ,dept_title 부서명
+      ,location_id 지역ID
+FROM department d
+WHERE NOT EXISTS
+(SELECT * FROM employee e
+WHERE e.dept_code = d.dept_id)
+ORDER BY dept_id ASC;
 
+--86
+SELECT MAX(salary)
+FROM employee
+WHERE dept_code = 'D1';
 
+SELECT emp_id 사원번호
+      ,emp_name 직원명
+      ,dept_code 부서번호
+      ,dept_title 부서명
+      ,TO_CHAR(salary, '999,999,999') 급여
+FROM employee e, department d
+WHERE e.dept_code = d.dept_id 
+AND salary >
+(SELECT MAX(salary)
+FROM employee
+WHERE dept_code = 'D1');
 
+--87
+--ANY : 조건이 만족하는 값이 하나라도 있으면 결과를 출력하는 연산자
+SELECT emp_id 사원번호
+      ,emp_name 직원명
+      ,dept_code 부서번호
+      ,dept_title 부서명
+      ,TO_CHAR(salary, '999,999,999') 급여
+FROM employee e, department d
+WHERE e.dept_code = d.dept_id 
+AND salary > 
+ANY(SELECT salary  
+    FROM employee
+    WHERE dept_code = 'D9');
 
+--ALL : 모든 조건을 만족할 때, 결과를 출력하는 연산자
+SELECT emp_id 사원번호
+      ,emp_name 직원명
+      ,dept_code 부서번호
+      ,dept_title 부서명
+      ,TO_CHAR(salary, '999,999,999') 급여
+FROM employee e, department d
+WHERE e.dept_code = d.dept_id 
+AND salary > 
+ALL(SELECT salary  
+    FROM employee
+    WHERE dept_code = 'D1');
 
+--88 테이블1 LEFT JOIN 테이블2 ON 조건
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,NVL(d.dept_id, '(없음)') 부서번호
+      ,NVL(d.dept_title, '(없음)') 부서명
+FROM employee e LEFT JOIN department d
+                ON (e.dept_code = d.dept_id);
 
+--89 RIGHT JOIN
+SELECT NVL(e.emp_id, '(없음)') 사원번호
+      ,NVL(e.emp_name, '(없음)') 직원명
+      ,NVL(d.dept_id, '(없음)') 부서번호
+      ,NVL(d.dept_title, '(없음)') 부서명
+FROM employee e RIGHT JOIN department d
+                ON (e.dept_code = d.dept_id);
+                
+--90 FULL JOIN
+SELECT NVL(e.emp_id, '(없음)') 사원번호
+      ,NVL(e.emp_name, '(없음)') 직원명
+      ,NVL(d.dept_id, '(없음)') 부서번호
+      ,NVL(d.dept_title, '(없음)') 부서명
+FROM employee e FULL JOIN department d
+                ON (e.dept_code = d.dept_id);
+
+--91 사원번호, 직원명, 부서번호, 지역명, 국가명, 급여, 입사일자 출력
+-- 지역명 : LOCATION.local_name
+-- 국가명 : NATIONAL.national_name
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_id 부서번호
+      ,d.dept_title 부서명
+      ,l.local_name 지역명
+      ,e.salary 급여
+      ,e.hire_date 입사일자
+FROM employee e
+    LEFT JOIN department d ON e.dept_code = d.dept_id
+    LEFT JOIN location l ON d.location_id = l.local_code
+    LEFT JOIN national n ON l.national_code = n.national_code;
+    
+--92
+--1) manager_id 컬럼이 NULL이 아닌 사원을 중복없이 조회
+SELECT DISTINCT manager_id
+FROM employee
+WHERE manager_id IS NOT NULL;
+--2) employee, department, job 테이블을 조인하여 조회
+SELECT *
+FROM employee e
+    LEFT JOIN department d ON e.dept_code = d.dept_id
+    JOIN job j ON e.job_code = j.job_code;
+--3) emp_id가 매니저 사원번호인 경우만을 조회
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      ,'매니저' 구분
+FROM employee e
+    LEFT JOIN department d ON e.dept_code = d.dept_id
+    JOIN job j ON e.job_code = j.job_code
+WHERE emp_id IN (SELECT DISTINCT manager_id
+FROM employee
+WHERE manager_id IS NOT NULL);
+
+--93
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      ,'사원' 구분
+FROM employee e
+    LEFT JOIN department d ON e.dept_code = d.dept_id
+    JOIN job j ON e.job_code = j.job_code
+WHERE emp_id NOT IN (SELECT DISTINCT manager_id
+FROM employee
+WHERE manager_id IS NOT NULL);
+
+--94 UNION 사용
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      ,'매니저' 구분
+FROM employee e
+    LEFT JOIN department d ON e.dept_code = d.dept_id
+    JOIN job j ON e.job_code = j.job_code
+WHERE emp_id IN (SELECT DISTINCT manager_id
+FROM employee
+WHERE manager_id IS NOT NULL)
+UNION 
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      ,'사원' 구분
+FROM employee e
+    LEFT JOIN department d ON e.dept_code = d.dept_id
+    JOIN job j ON e.job_code = j.job_code
+WHERE emp_id NOT IN (SELECT DISTINCT manager_id
+FROM employee
+WHERE manager_id IS NOT NULL);
+
+--95 CASE 사용
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      ,CASE
+            WHEN emp_id IN (SELECT DISTINCT manager_id
+                                FROM employee
+                                WHERE manager_id IS NOT NULL)
+                 THEN '매니저'
+            ELSE '사원'
+            END 구분
+FROM employee e
+    LEFT JOIN department d ON e.dept_code = d.dept_id
+    JOIN job j ON e.job_code = j.job_code;
+
+--96
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      ,CASE WHEN emp_id IN (SELECT DISTINCT manager_id
+                                FROM employee
+                                WHERE manager_id IS NOT NULL)
+                 THEN '매니저'
+            ELSE '사원'
+            END 구분
+      ,CASE WHEN SUBSTR(e.emp_no,8,1) IN ('1','3') THEN '남성'
+            WHEN SUBSTR(e.emp_no,8,1) IN ('2','4') THEN '여성'
+            END 성별
+      ,TO_CHAR(sysdate, 'YYYY')
+       - TO_NUMBER
+            (CASE WHEN SUBSTR(e.emp_no,8,1) IN ('1','2') THEN '19'
+                  WHEN SUBSTR(e.emp_no,8,1) IN ('1','2') THEN '20'
+             END 
+            || (SUBSTR(e.emp_no,1,2)) )+1 현재나이
+      ,TRUNC(MONTHS_BETWEEN(sysdate, TO_DATE(
+                     CASE WHEN SUBSTR(e.emp_no,8,1) IN ('1','2') THEN '19'
+                          WHEN SUBSTR(e.emp_no,8,1) IN ('1','2') THEN '20'
+                     END || SUBSTR(emp_no,1,6))) / 12) 만나이
+      ,RPAD(SUBSTR(e.emp_no,1,8),14,'*') 주민등록번호
+FROM employee e
+    LEFT JOIN department d ON e.dept_code = d.dept_id
+    JOIN job j USING(job_code);
+--join 테이블 on 컬럼명=컬럼명
+--join 테이블 using(컬럼명) >> 컬럼명이 같을 때, using으로 사용 가능
+
+--만 나이
+SELECT emp_name
+      ,TRUNC(MONTHS_BETWEEN(sysdate, TO_DATE(
+                     CASE WHEN SUBSTR(e.emp_no,8,1) IN ('1','2') THEN '19'
+                          WHEN SUBSTR(e.emp_no,8,1) IN ('1','2') THEN '20'
+                     END || SUBSTR(emp_no,1,6))) / 12) 만나이
+FROM employee e;
+
+--97
+SELECT ROWNUM 순번
+      ,e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      ,CASE WHEN emp_id IN (SELECT DISTINCT manager_id
+                                FROM employee
+                                WHERE manager_id IS NOT NULL)
+                 THEN '매니저'
+            ELSE '사원'
+            END 구분
+      ,CASE WHEN SUBSTR(e.emp_no,8,1) IN ('1','3') THEN '남성'
+            WHEN SUBSTR(e.emp_no,8,1) IN ('2','4') THEN '여성'
+            END 성별
+      ,TO_CHAR(sysdate, 'YYYY')
+       - TO_NUMBER
+            (CASE WHEN SUBSTR(e.emp_no,8,1) IN ('1','2') THEN '19'
+                  WHEN SUBSTR(e.emp_no,8,1) IN ('1','2') THEN '20'
+             END 
+            || (SUBSTR(e.emp_no,1,2)) )+1 현재나이
+      ,TRUNC(MONTHS_BETWEEN(sysdate, TO_DATE(
+                     CASE WHEN SUBSTR(e.emp_no,8,1) IN ('1','2') THEN '19'
+                          WHEN SUBSTR(e.emp_no,8,1) IN ('1','2') THEN '20'
+                     END || SUBSTR(emp_no,1,6))) / 12) 만나이
+      ,TRUNC(MONTHS_BETWEEN(sysdate, hire_date) / 12) 근속년수
+      ,RPAD(SUBSTR(e.emp_no,1,8),14,'*') 주민등록번호
+      ,TO_CHAR(e.hire_date, 'YYYY.MM.DD') 입사일자
+      --연봉 : (급여 + (급여*보너스))*12
+      ,TO_CHAR((salary + NVL(salary*bonus, 0))*12, '999,999,999,999') 연봉
+FROM employee e
+    LEFT JOIN department d ON e.dept_code = d.dept_id
+    JOIN job j USING(job_code);
