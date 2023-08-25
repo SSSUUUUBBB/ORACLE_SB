@@ -529,3 +529,46 @@ SELECT ROWNUM 순번
 FROM employee e
     LEFT JOIN department d ON e.dept_code = d.dept_id
     JOIN job j USING(job_code);
+    
+    
+    
+    
+    
+-- 데이터 사전 뷰
+SELECT *
+FROM user_tables
+WHERE table_name LIKE '%EMP%';
+
+
+
+
+
+--뷰 생성하기
+--사원, 부서 테이블 조인한 결과를 뷰로 생성
+--1. 사원, 부서 테이블 조인
+SELECT e.emp_id
+      ,e.emp_name
+      ,d.dept_id
+      ,d.dept_title
+FROM employee e
+    LEFT JOIN department d ON e.dept_code = d.dept_id;
+--2. 뷰로 생성
+CREATE VIEW v_emp_dept AS
+SELECT e.emp_id
+      ,e.emp_name
+      ,d.dept_id
+      ,d.dept_title
+FROM employee e
+    LEFT JOIN department d ON e.dept_code = d.dept_id;
+
+--3. 뷰 조회
+SELECT * FROM v_emp_dept;
+
+--뷰 삭제
+DROP VIEW v_vmp_dept;
+
+    
+    
+    
+    
+    

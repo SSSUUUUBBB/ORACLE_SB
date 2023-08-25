@@ -469,9 +469,12 @@ COMMENT ON COLUMN MS_STUDENT.REG_DATE IS '등록일자';
 COMMENT ON COLUMN MS_STUDENT.UPD_DATE IS '수정일자';
 COMMENT ON COLUMN MS_STUDENT.ETC IS '특이사항';
 
-
+DROP TABLE MS_STUDENT;
 
 --53~65 8/22 오후수업 > 조퇴(상담)
+
+
+
 --66~69 과제
 
 --70~ joeun.sql 에서 진행(joeun계정 사용)
